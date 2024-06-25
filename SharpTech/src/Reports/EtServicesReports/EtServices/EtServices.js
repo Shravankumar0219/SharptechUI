@@ -45,15 +45,30 @@ function EtServices() {
             }
           ],
           etnameruns: nameRunData.map(row => ({ ...row.data })),
-          ettaxinstallment: tableTaxInstaData.map(row => ({ ...row.data })),
+          ettaxinstallment: tableTaxInstaData.map(row => ({
+            amount: row.amount,
+            status: row.status,
+            paidDueDate: row.paidDueDate
+          })),
         }
       };
+
+      console.log("Payload:", payload);  // Add this line to log the payload
+      
       await axios.post("http://localhost:8080/etinsert", payload, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       window.alert("Data Sent Sucessfully");
+      
+      handleClearRows1();
+      handleClearRows();
+      handleClear();
+      clearMortgageInfo();
+      clearVestingInfo();
+      clearVestingInfo();
+      clearGeneralInfo();
 
 
     } catch (error) {
@@ -87,7 +102,7 @@ function EtServices() {
     notes: "",
   })
 
-  const { landValue, buildingValue, totalValue, excemption, notes } = taxinfo
+  const { landValue, buildingValue, excemption, notes } = taxinfo
 
   const { orderNumber, refeenceNumber, searchDate, effectiveDate, propertyAdderess, state, country, parcelNumber,
     subDivision, lotUnit, block, sfrPudCondo } = user
@@ -95,12 +110,7 @@ function EtServices() {
 
 
 
-  const onInputChange2 = (e) => {
 
-    setTaxInfo({ ...taxinfo, [e.target.name]: e.target.value })
-
-
-  };
 
   const onInputChange = (e) => {
 
@@ -137,11 +147,14 @@ function EtServices() {
 
 
 
-  const [tableTaxInstaData, setTableTaxInstaData] = useState([
-    { id: 1, data: {} },
-    { id: 2, data: {} },
-  ]);
-  const [nextTableTaxInstaId, setNextTableTaxInstaId] = useState(2);
+  const initialTableTaxInstaData = [
+    { id: 1, amount: "", status: "", paidDueDate: "" },
+    { id: 2, amount: "", status: "", paidDueDate: "" },
+  ];
+
+
+  const [tableTaxInstaData, setTableTaxInstaData] = useState(initialTableTaxInstaData);
+  const [nextTableTaxInstaId, setNextTableTaxInstaId] = useState(3); // Starting with 3 since you have two initial rows
 
   const [considerationAmount, setConsiderationAmount] = useState('');
 
@@ -164,6 +177,47 @@ function EtServices() {
   };
 
   const [amount, setAmount] = useState('');
+
+  const onInputChange2 = (e) => {
+    const { name, value } = e.target;
+    setTaxInfo({ ...taxinfo, [name]: value });
+  };
+
+
+    // const onInputChange2 = (e) => {
+
+  //   setTaxInfo({ ...taxinfo, [e.target.name]: e.target.value })
+
+
+  // };
+
+
+  const handleInputChangeTaxInsta = (e, id) => {
+    const { name, value } = e.target;
+    setTableTaxInstaData(prevData =>
+      prevData.map(row => (row.id === id ? { ...row, [name]: value } : row))
+    );
+  };
+
+
+  //   const handleInputChangeTaxInsta = (e, rowId) => {
+  //   const { name, value } = e.target;
+  //   const updatedTableTaxInstaData = tableTaxInstaData.map(row => {
+  //     if (row.id === rowId) {
+  //       return {
+  //         ...row,
+  //         data: {
+  //           ...row.data,
+  //           [name]: value
+  //         }
+  //       };
+  //     }
+  //     return row;
+  //   });
+  //   setTableTaxInstaData(updatedTableTaxInstaData);
+  // };
+
+  
   const handleInputChange2 = (e, tableId) => {
     const { name, value } = e.target;
     const updatedTablesData2 = tablesData2.map(table => {
@@ -217,22 +271,7 @@ function EtServices() {
     setNameRunData(updatedNameRunData);
   };
 
-  const handleInputChangeTaxInsta = (e, rowId) => {
-    const { name, value } = e.target;
-    const updatedTableTaxInstaData = tableTaxInstaData.map(row => {
-      if (row.id === rowId) {
-        return {
-          ...row,
-          data: {
-            ...row.data,
-            [name]: value
-          }
-        };
-      }
-      return row;
-    });
-    setTableTaxInstaData(updatedTableTaxInstaData);
-  };
+
 
 
 
@@ -320,20 +359,23 @@ function EtServices() {
     }
   };
 
+  const handleDeleteLastTaxInstaRow = (e) => {
+    if (tableTaxInstaData.length > 0) {
+      const updatedRows = tableTaxInstaData.slice(0, -1); // Remove the last row
+      setTableTaxInstaData(updatedRows);
+      localStorage.setItem('tableTaxInstaData', JSON.stringify(updatedRows)); // Update local storage)
+    }
+  };
+
   const handleAddTaxInstaRow = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     const newTableTaxInstaId = nextTableTaxInstaId;
-    const newRow = { id: newTableTaxInstaId, data: {} };
+    const newRow = { id: newTableTaxInstaId, amount: "", status: "", paidDueDate: "" };
     setTableTaxInstaData([...tableTaxInstaData, newRow]);
     setNextTableTaxInstaId(newTableTaxInstaId + 1);
   };
 
-  const handleDeleteLastTaxInstaRow = () => {
-    if (tableTaxInstaData.length > 0) {
-      const updatedRows = tableTaxInstaData.slice(0, -1); // Remove the last row
-      setTableTaxInstaData(updatedRows);
-    }
-  };
+
 
   // const handleSave = () => {
   //   // Check if all fields in all tables are filled
@@ -530,7 +572,7 @@ function EtServices() {
     // Update overall tables data in localStorage
     localStorage.setItem('vestingInfo', JSON.stringify(tablesData));
   };
-
+  
   const clearVestingInfo = (tableId) => {
     const updatedTables = tablesData.map(table => {
       if (table.id === tableId) {
@@ -555,7 +597,7 @@ function EtServices() {
   };
 
 
-  const clearMortgageInfo = (tableId) => {
+  const clearMortgageInfo  = (tableId) => {
     const updatedTables = tablesData2.map(table => {
       if (table.id === tableId) {
         return { ...table, data: {} };
@@ -575,7 +617,7 @@ function EtServices() {
   };
 
   // Handle clearing data of the last row
-  const handleClear = () => {
+  const handleClear  = () => {
     const clearedRows = tableRowsData.map(row => ({ ...row, data: {} }));
     setTableRowsData(clearedRows);
     localStorage.removeItem('tableRowsData'); // Clear local storage
@@ -588,7 +630,7 @@ function EtServices() {
   };
 
 
-  const handleClearRows = () => {
+  const handleClearRows  = () => {
     const clearedData = nameRunData.map(row => ({ ...row, data: {} }));
     setNameRunData(clearedData);
     localStorage.removeItem('nameRunData');
@@ -600,8 +642,8 @@ function EtServices() {
     localStorage.setItem('tableTaxInstaData', JSON.stringify(tableTaxInstaData));
     alert('Data saved to local storage!');
   };
-
-  const handleClearRows1 = () => {
+  const handleClearRows1  = () => {
+    // Clear tax information
     setTaxInfo({
       landValue: "",
       buildingValue: "",
@@ -609,13 +651,24 @@ function EtServices() {
       excemption: "",
       notes: "",
     });
-    setTableTaxInstaData([]);
+  
+    // Clear data inside table rows without removing the rows themselves
+    const clearedTableTaxInstaData = tableTaxInstaData.map(row => ({
+      ...row,
+      amount: "",
+      status: "",
+      paidDueDate: ""
+    }));
+    setTableTaxInstaData(clearedTableTaxInstaData);
+  
+    // Remove from local storage
     localStorage.removeItem('taxInformation');
     localStorage.removeItem('tableTaxInstaData');
+  
     alert('Data cleared!');
   };
-  
-  
+
+
   return (
     <div>
       <Navbar />
@@ -628,7 +681,7 @@ function EtServices() {
 
             <h1><b>ETrack Title Services Inc</b></h1>
 
-            {/* --------------------------------------------------------------Table 1-----------------------------------------------*/}
+            {/* --------------------------------------------------------------GENERAL INFORMATION 1-----------------------------------------------*/}
             <div>
               <br />
               <center>
@@ -727,7 +780,7 @@ function EtServices() {
               <Button className='et-service-genenal-info-clear-button' label="Clear&nbsp;" icon="pi pi-times" type='button' onClick={clearGeneralInfo} />
             </div>
 
-            {/* --------------------------------------------------------------Table 2-----------------------------------------------*/}
+            {/* --------------------------------------------------------------VestingInformation 2-----------------------------------------------*/}
 
             <div>
               {tablesData.map(table => (
@@ -811,7 +864,7 @@ function EtServices() {
             </div>
             <br />
 
-            {/* --------------------------------------------------------------Table 3-----------------------------------------------*/}
+            {/* --------------------------------------------------------------OPEN MORTGAGE  3-----------------------------------------------*/}
 
 
 
@@ -929,7 +982,7 @@ function EtServices() {
             <br />
 
 
-            {/* --------------------------------------------------------------Table 4-----------------------------------------------*/}
+            {/* --------------------------------------------------------------ACTIVE JUDGMENTS AND LIENS 4-----------------------------------------------*/}
             <div>
               <br />
               <center>
@@ -951,7 +1004,7 @@ function EtServices() {
                     {tableRowsData.map((row) => (
                       <tr key={row.id}>
                         <td className='et-service-form-table-1-data' style={{ border: '1px solid black' }}>
-                          <input type="text" className="et-service-input-labels" placeholder="Enter Case Number" name="caseNumber" value={row.data.caseNumber || ''} onChange={e => handleChange(e, row.id)} style={{ width: '100%' }} />
+                        <input type="text" className="et-service-input-labels" placeholder="Enter CaseNumber" name="caseNumber" value={row.data.caseNumber || ''} onChange={e => handleChange(e, row.id)} style={{ width: '100%' }} />
                         </td>
                         <td className='et-service-form-table-1-data' style={{ border: '1px solid black' }}>
                           <input type="text" className="et-service-input-labels" placeholder="Enter Description" name="description" value={row.data.description || ''} onChange={e => handleChange(e, row.id)} style={{ width: '100%' }} />
@@ -986,14 +1039,14 @@ function EtServices() {
             </div>
 
 
-            {/* --------------------------------------------------------------Table 5-----------------------------------------------*/}
+            {/* --------------------------------------------------------------TAX INFORMATION 5-----------------------------------------------*/}
 
             <div>
               <br />
               <center>
-                <table className='et-service-form-table-1' style={{ border: '2px solid black', borderCollapse: 'collapse' }} >
+                <table className='et-service-form-table-1' style={{ border: '2px solid black', borderCollapse: 'collapse' }}>
                   <tr>
-                    <th className='et-service-form-table-selftables-heading' colSpan="4">TAX INFORMATION </th>
+                    <th className='et-service-form-table-selftables-heading' colSpan="4">TAX INFORMATION</th>
                   </tr>
                   <tr className='th-color'>
                     <th className='et-service-form-table-sub-selftables-heading' style={{ border: '1px solid black' }}>ASSESMENT YEAR</th>
@@ -1003,38 +1056,35 @@ function EtServices() {
                   </tr>
 
                   <tr>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} > LAND VALUE </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} >
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}> LAND VALUE </td>
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
                       <input type="text" className="et-service-input-labels" placeholder="Enter LandValue" name="landValue" value={taxinfo.landValue} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
                     </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} > BUILDING VALUE </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} >
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}> BUILDING VALUE </td>
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
                       <input type="text" className="et-service-input-labels" placeholder="Enter BuildingValue" name="buildingValue" value={taxinfo.buildingValue} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
                     </td>
                   </tr>
-
                   <tr>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} > TOTAL VALUE </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} >
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}> TOTAL VALUE </td>
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
                       <input type="text" className="et-service-input-labels" placeholder="Enter TotalValue" name="totalValue" value={taxinfo.totalValue} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
                     </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} > EXEMPTION </td>
-                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }} >
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}> EXEMPTION </td>
+                    <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
                       <input type="text" className="et-service-input-labels" placeholder="Enter Excemption" name="excemption" value={taxinfo.excemption} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
                     </td>
                   </tr>
-
                   <tr>
                     <th className='et-service-form-table-sub-selftables-heading' style={{ border: '1px solid black' }}>INSTALLMENT</th>
                     <th className='et-service-form-table-sub-selftables-heading' style={{ border: '1px solid black' }}>AMOUNT</th>
                     <th className='et-service-form-table-sub-selftables-heading' style={{ border: '1px solid black' }}>STATUS</th>
                     <th className='et-service-form-table-sub-selftables-heading' style={{ border: '1px solid black' }}>PAID/DUE DATE</th>
-
                   </tr>
                   {tableTaxInstaData.map((row) => (
                     <tr key={row.id}>
                       <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
-                        {row.id - 1 === 0 ? `${row.id}st Installment` : row.id - 1 === 1 ? `${row.id}nd Installment` : row.id - 1 === 2 ? `${row.id}rd Installment` : `${row.id}th Installment`}
+                        {row.id === 1 ? "1st Installment" : row.id === 2 ? "2nd Installment" : row.id === 3 ? "3rd Installment" : `${row.id}th Installment`}
                       </td>
                       <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
                         <input type="text" className="et-service-input-labels" name="amount" placeholder='Enter Amount' value={row.amount} onChange={e => handleInputChangeTaxInsta(e, row.id)} style={{ width: '100%' }} />
@@ -1043,34 +1093,30 @@ function EtServices() {
                         <input type="text" className="et-service-input-labels" name="status" placeholder='Enter Status' value={row.status} onChange={e => handleInputChangeTaxInsta(e, row.id)} style={{ width: '100%' }} />
                       </td>
                       <td className='et-service-form-table-1-data' colSpan='1' style={{ border: '1px solid black' }}>
-                        <input type="Date" className="et-service-input-labels" name="paidDueDate" value={row.paidDueDate} onChange={e => handleInputChangeTaxInsta(e, row.id)} style={{ width: '100%' }} />
+                        <input type="date" className="et-service-input-labels" name="paidDueDate" value={row.paidDueDate} onChange={e => handleInputChangeTaxInsta(e, row.id)} style={{ width: '100%' }} />
                       </td>
                     </tr>
                   ))}
                   <tr>
                     <th style={{ border: '1px solid black' }}> NOTES </th>
                     <td className='et-service-form-table-1-data' colSpan={6} style={{ border: '1px solid black' }}>
-                      <input type='text-area' className="et-service-input-labels" placeholder="Enter Notes" name="notes" value={notes} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
+                      <input type='text-area' className="et-service-input-labels" placeholder="Enter Notes" name="notes" value={taxinfo.notes} onChange={(e) => onInputChange2(e)} style={{ width: '100%' }} />
                     </td>
                   </tr>
                 </table>
-                {/* <button className='btn-style' onClick={handleAddTaxInstaRow}>Add Row</button> */}
                 <button className="et-services-add-button" onClick={handleAddTaxInstaRow}> <i className="pi pi-plus" style={{ marginRight: '8px' }}></i> Row</button>
                 {tableTaxInstaData.length > 2 && (
-                  // <button type="button" className='btn-style' onClick={handleDeleteLastTaxInstaRow}>Delete Row</button>
                   <button className="et-services-delete-button" onClick={handleDeleteLastTaxInstaRow}>
-                    <i className="pi pi-trash" style={{ marginRight: '8px' }}></i> Row  </button>
+                    <i className="pi pi-trash" style={{ marginRight: '8px' }}></i> Row
+                  </button>
                 )}
-
               </center>
-              {/* <button onClick={handleSaveTemporarilyRow}>Save</button>
-              <button onClick={handleClearRows}>Clear</button> */}
               <Button className='et-service-genenal-info-save-button' label="Save&nbsp;" icon="pi pi-check" type='button' onClick={handleSaveTemporarilyRow1} />
               <Button className='et-service-genenal-info-clear-button' label="Clear&nbsp;" icon="pi pi-times" type='button' onClick={handleClearRows1} />
             </div>
             <br />
 
-            {/* --------------------------------------------------------------Table 6-----------------------------------------------*/}
+            {/* --------------------------------------------------------------NAMES RUNS 6-----------------------------------------------*/}
             <div>
               <br />
               <center>
@@ -1117,7 +1163,7 @@ function EtServices() {
               <Button className='et-service-genenal-info-save-button' label="Save&nbsp;" icon="pi pi-check" type='button' onClick={handleSaveTemporarilyRow1} />
               <Button className='et-service-genenal-info-clear-button' label="Clear&nbsp;" icon="pi pi-times" type='button' onClick={handleClearRows} />
             </div>
-            {/* --------------------------------------------------------------Table 7-----------------------------------------------*/}
+            {/* --------------------------------------------------------------LEGAL DESCRIPTION 7-----------------------------------------------*/}
             <div>
               <br />
               <center>
@@ -1145,7 +1191,7 @@ function EtServices() {
 
             </div>
 
-            {/* --------------------------------------------------------------Table 8-----------------------------------------------*/}
+            {/* --------------------------------------------------------------DISCLAIMER 8-----------------------------------------------*/}
             <div>
               <br />
               <center>
@@ -1165,7 +1211,7 @@ function EtServices() {
 
 
             </div>
-            {/* --------------------------------------------------------------Table 9-----------------------------------------------*/}
+            {/* --------------------------------------------------------------DocumentUpload 9-----------------------------------------------*/}
             <div>
               <br />
               <center>
